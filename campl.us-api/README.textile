@@ -1,0 +1,345 @@
+h1. Camera+ campl.us integration API
+
+This is our basic read-only API. The purpose of this API is to facilitate Twitter client authors to show our users' content inline in tweet feeds, and our users to integrate their Camera+ photo feed into their blogs or websites.
+
+
+h2. Widgets
+
+If all you want is to embed your recent photos on your blog or website, we have a simple HTML code snippet you can add to embed it on your page. Simply copy and paste this HTML code, and replace "mostlylisa" with your own username. 
+
+bc. <iframe src="http://campl.us/user/mostlylisa:widget" style="width: 450px; height: 500px;" allowtransparency="true" scrolling="no" frameborder="0"></iframe>
+
+You can also add any of the following GET variables to the URL to change the style of the widget:
+
+|_. Variable |_. Required? |_. Value |_. Default |
+| rows | No | Number between 1-10 | 3 |
+| columns | No | Number between 1-10  | 3 |
+| thumbnailsize | No | Thumbnail pixel size | 120 |
+| color | No | dark/light | dark |
+| backgroundcolor | No | CSS color | transparent |
+| logostyle | No | small/medium/large | medium |
+| thumbnailstyle | No | straight/skewed | skewed |
+| animated | No | yes/no | yes |
+
+You can use this tool to experiment with the above settings: http://campl.us/embed
+
+h2. API Requests
+
+For more customized interaction, you can use our simple read-only API. Currently we require no authentication or client registration, and there are no usage limits. This is subject to change, so please keep an eye on our blog for the latest news.
+
+For any of the calls below which return JSON, if you require a JSONP callback, it can be supplied in the query string as ?callback=jsonpFunctionName
+
+
+h3. Pages
+
+Each time a user shares one or more photos, a page is created. Unlike most other photo sharing services, there can be more than one photo shared per page.
+
+Photo pages are identified by their short URLs, such as http://campl.us/dBg4. The campl.us domain also hosts some other, non-photo pages. These can be identified easily as they will always contain a forward-slash (/) somewhere in the path, possibly as a trailing character. If you try to make API requests on a non-photo page, you will get an HTTP 404 error.
+
+To get information for page, make an HTTP request to the short url with one of the following extensions:
+
+h4. Thumbnails
+
+|_. URL extension |_. Description |_. Example |
+| :120px | HTTP redirect to the maximum 120px dimensions scaled version of the first image on the page. | *Request:* GET http://campl.us/dBg4:120px
+ *Response:* HTTP 302 redirect, JPEG file. |
+| :480px | HTTP redirect to the maximum 480px dimensions scaled version of the first image on the page. | *Request:* GET http://campl.us/dBg4:480px 
+ *Response:* HTTP 302 redirect, JPEG file. |
+| :800px | HTTP redirect to the maximum 800px version of the first image on the page. This is currently the largest size available. | *Request:* GET http://campl.us/dBg4:800px
+ *Response:* HTTP 302 redirect, JPEG file. |
+
+h4. Metadata
+
+|_. URL extension |_. Description |_. Example |
+| :info | JSON object containing all the information for a page. This contains everything you'd need to recreate one of our HTML pages: Author, tweet text, images, image metadata (EXIF, recipes) and comments | *Request:* GET http://campl.us/dBg4:info |
+
+*Response:*  This example has been abbreviated for space.
+
+bc. {
+	"page": {
+		"timestamp": "2011-08-13 02:46:00",
+		"views": 5567,
+		"comments": 11,
+		"tweet": {
+			"id": "102269650846494721",
+			"text": "Camera+ 2.3 is out with CAPTIONS!",
+			"userid": 15027362,
+			"username": "taptaptap",
+			"realname": "tap tap tap",
+			"avatar": "http://a0.twimg.com/profile_images/1409211475/app_icon_normal.png"
+		},
+		"location": {
+			"coords": "40.78046834484849 -73.9732858069697",
+			"name": "Midtown, New York, NY, USA"
+		}
+	},
+	"pictures": [
+		{
+			"120px": "http://pics.campl.us/t/e/ec3fa90e30c518e291076c7276742ab1.jpg",
+			"480px": "http://pics.campl.us/iphone/e/ec3fa90e30c518e291076c7276742ab1.jpg",
+			"800px": "http://pics.campl.us/f/e/ec3fa90e30c518e291076c7276742ab1.jpg",
+			"fullwidth": 800,
+			"fullheight": 651,
+			"location": "40.78046834484849 -73.9732858069697",
+			"recipe": [
+				{
+					"type": "scenemode",
+					"value": "Clarity"
+				},
+				{
+					"type": "fx",
+					"value": "Cross Process"
+				},
+				{
+					"type": "border",
+					"value": "Dark Mat + caption"
+				}
+			],
+			"exifdata": [
+				{
+					"title": "Camera",
+					"value": "Apple iPhone 4",
+				},
+				{
+					"title": "Exposure",
+					"value": "1/60 sec",
+				},
+				{
+					"title": "Aperture",
+					"value": "f/2.8",
+				}
+			]
+		}
+	],
+	"comments": [
+		{
+			"author": "James Lee Mandy",
+			"avatar": "http://profile.ak.fbcdn.net/hprofile-ak-ash2/274084_752769761_5319941_q.jpg",
+			"url": "http://www.facebook.com/profile.php?id=752769761",
+			"text": "Amazing!!!!"
+		},
+		{
+			"author": "Pixel Psycho ",
+			"avatar": "http://a2.twimg.com/profile_images/1315840794/Me_MyBoo_normal.JPG",
+			"url": "http://twitter.com/AndyTheJoker",
+			"text": "WOW! You rocks guys! Love this app."
+		}
+	]
+}
+
+|_. URL extension |_. Description |_. Example |
+| :urls | JSON list with just the URLs for all sizes of all the images on the page, and the real dimensions of the image | *Request:* GET http://campl.us/dBg4:urls |
+
+*Response:*  This example has been abbreviated for space.
+
+bc. [
+	{
+		"120px": "http://pics.campl.us/t/e/ec3fa90e30c518e291076c7276742ab1.jpg",
+		"480px": "http://pics.campl.us/iphone/e/ec3fa90e30c518e291076c7276742ab1.jpg",
+		"800px": "http://pics.campl.us/f/e/ec3fa90e30c518e291076c7276742ab1.jpg",
+		"fullwidth": 800,
+		"fullheight": 651
+	},
+	{
+		"120px": "http://pics.campl.us/t/2/261d38c907153dc078619fa9d5ae0ab1.jpg",
+		"480px": "http://pics.campl.us/iphone/2/261d38c907153dc078619fa9d5ae0ab1.jpg",
+		"800px": "http://pics.campl.us/f/2/261d38c907153dc078619fa9d5ae0ab1.jpg",
+		"fullwidth": 800,
+		"fullheight": 623
+	}
+]
+
+|_. URL extension |_. Description |_. Example |
+| :count | The raw number of images on the page (for adding a badge to a thumbnail, or showing e.g. "more…") | *Request:* GET http://campl.us/dBg4:count |
+
+*Response:*
+
+bc. 4
+
+h3. Users
+
+Users are identified by their Twitter usernames. For detailed information on a user, use the appropriate Twitter API.
+
+Users have their own home pages under the /user path, e.g. http://campl.us/user/taptaptap. Requests for users can fail with a 404 if the user has never uploaded anything to campl.us, or 403 if their Twitter timeline is set to private.
+
+h4. User info API
+
+|_. URL extension |_. Description |_. Example |
+| :pages | JSON object with a short user summary, and a list of all their pages and images. Each call returns up to 50 images. Contains a "next" row with the URL to request the next 50 images. | *Request:* GET http://campl.us/user/mostlylisa:pages |
+
+*Response:*  This example has been abbreviated for space.
+
+bc. {
+	"user": {
+		"userid": 6978642,
+		"username": "mostlylisa",
+		"realname": "Lisa Bettany",
+		"avatar": "http://a2.twimg.com/profile_images/1265504115/avatar_normal.jpg",
+		"pages": 91,
+		"pictures": 603
+	},
+	"pages": [
+		{
+			"url": "http://campl.us/eGVV",
+			"tweettext": "Last day of Disneyland fun! ",
+			"tweetid": "112269070581252096",
+			"timestamp": "2011-09-09 17:00:06",
+			"views": 1948,
+			"comments": 3,
+			"location": "33.81207671337866 -117.9190023406619",
+			"locationname": "Anaheim, CA",
+			"images": [
+				{
+					"800px": "http://pics.campl.us/f/1/19b921d39fff77109ac8189e914a3716.jpg",
+					"120px": "http://pics.campl.us/t/1/19b921d39fff77109ac8189e914a3716.jpg",
+					"480px": "http://pics.campl.us/iphone/1/19b921d39fff77109ac8189e914a3716.jpg",
+					"fullwidth": 800,
+					"fullheight": 597,
+					"location": "33.81207671337866 -117.9190023406619"
+				},
+				{
+					"800px": "http://pics.campl.us/f/0/0aff382040a46d94b07d7c5faa793536.jpg",
+					"120px": "http://pics.campl.us/t/0/0aff382040a46d94b07d7c5faa793536.jpg",
+					"480px": "http://pics.campl.us/iphone/0/0aff382040a46d94b07d7c5faa793536.jpg",
+					"fullwidth": 800,
+					"fullheight": 597,
+					"location": "33.81345257866012 -117.9183844749326"
+				}
+			]
+		},
+		{
+			"url": "http://campl.us/eBpp",
+			"tweettext": "Fun day at Disney's California Adventure! :)",
+			"tweetid": "111262089439481856",
+			"timestamp": "2011-09-06 22:18:43",
+			"views": 2314,
+			"comments": 12,
+			"location": "33.80585981067191 -117.922707219128",
+			"locationname": "Anaheim, CA",
+			"images": [
+				{
+					"800px": "http://pics.campl.us/f/c/cd7d8ff4b1de2f4cece2ac5290889c47.jpg",
+					"120px": "http://pics.campl.us/t/c/cd7d8ff4b1de2f4cece2ac5290889c47.jpg",
+					"480px": "http://pics.campl.us/iphone/c/cd7d8ff4b1de2f4cece2ac5290889c47.jpg",
+					"fullwidth": 800,
+					"fullheight": 597,
+					"location": "33.80585981067191 -117.922707219128"
+				}
+			]
+		}
+	],
+	"next": "http://dev.campl.us/user/mostlylisa:pages?continue=eb0x"
+}
+
+h4. User info RSS
+
+Another way to consume user information is by using one of the associated RSS feeds:
+
+|_. URL extension |_. Description |_. Example |
+| /rss | The user's most recent pages | http://campl.us/user/taptaptap/rss |
+| /comment_rss | Recent comments posted on the user's pages | http://campl.us/user/taptaptap/comment_rss |
+
+
+h3. Search
+
+We also have a basic search API. This will only search public photos. Results are limited to 100 photos (note: photos, not pages).
+
+The search API is *beta* and subject to sudden change. Please give us feedback on what changes you'd like to see here!
+
+h4. Base URL
+
+bc. http://campl.us/search?
+
+h4. Query variables
+
+|_. Variable |_. Format |_. Description |_. Default |
+| username | String | Twitter username |  - |
+| tweettext | String  | Tweet text partial match | - |
+| earliest | YYYY-MM-DD HH:MM | Return only tweets on or after this date/time (EST) | - |
+| latest | YYYY-MM-DD HH:MM | Return only tweets on or before this date/time (EST) | - |
+| locationname | String | Location name string partial match. Note: location names are missing for pages created before March, 2011. | - |
+
+h4. Example
+
+*Request*
+
+bc. http://campl.us/search.php?username=mostlylisa&locationname=New%20York
+
+*Response:*  This example has been abbreviated for space.
+
+bc. [
+	{
+		"url": "http://campl.us/bvjQ",
+		"tweettext": "Summertime on the streets of NYC #mostly365",
+		"tweetid": "80355258752188416",
+		"timestamp": "2011-06-13 15:26:02",
+		"views": 2731,
+		"comments": 2,
+		"location": null,
+		"locationname": "Midtown, New York, NY, USA",
+		"user": {
+			"userid": "6978642",
+			"username": "mostlylisa",
+			"realname": "Lisa Bettany",
+			"avatar": "http://a2.twimg.com/profile_images/1265504115/avatar_normal.jpg"
+		},
+		"images": [
+			{
+				"800px": "http://pics.campl.us/f/4/468f0ddfc9c084e233a6d854b3e2d532.jpg",
+				"120px": "http://pics.campl.us/t/4/468f0ddfc9c084e233a6d854b3e2d532.jpg",
+				"480px": "http://pics.campl.us/iphone/4/468f0ddfc9c084e233a6d854b3e2d532.jpg",
+				"fullwidth": 800,
+				"fullheight": 800,
+				"location": ""
+			},
+			{
+				"800px": "http://pics.campl.us/f/9/9994a349114410e3df7a8ce9e65b37ee.jpg",
+				"120px": "http://pics.campl.us/t/9/9994a349114410e3df7a8ce9e65b37ee.jpg",
+				"480px": "http://pics.campl.us/iphone/9/9994a349114410e3df7a8ce9e65b37ee.jpg",
+				"fullwidth": 800,
+				"fullheight": 800,
+				"location": ""
+			}
+		]
+	},
+	{
+		"url": "http://campl.us/PYI",
+		"tweettext": "Exploring Chelsea Market in NYC! ",
+		"tweetid": "55685684014493696",
+		"timestamp": "2011-04-06 13:37:56",
+		"views": 2359,
+		"comments": 7,
+		"location": null,
+		"locationname": "Midtown, New York, NY, USA",
+		"user": {
+			"userid": "6978642",
+			"username": "mostlylisa",
+			"realname": "Lisa Bettany",
+			"avatar": "http://a2.twimg.com/profile_images/1265504115/avatar_normal.jpg"
+		},
+		"images": [
+			{
+				"800px": "http://pics.campl.us/f/1/193271f52498109f2c651da451c5e522.jpg",
+				"120px": "http://pics.campl.us/t/1/193271f52498109f2c651da451c5e522.jpg",
+				"480px": "http://pics.campl.us/iphone/1/193271f52498109f2c651da451c5e522.jpg",
+				"fullwidth": 800,
+				"fullheight": 601,
+				"location": ""
+			}
+		]
+	}
+]
+
+h2. Twitter client UX recommendations 
+
+Camera+ presents a slightly unique challenge in that it's the only service (that we know of) which can have multiple photos per link. We suggest clients showing inline content solve this by either reading :urls and showing a list or grid of all the thumbnails on the page, or if space is at a premium, by reading :count and putting a number badge in the corner of the thumbnail.
+
+When displaying more than one image, you can link to anchors on the linked page by using the word "photo" and sequential numbers starting at 1. E.g. link to the third image on a page with http://campl.us/eBpp#photo3 
+
+
+h2. Rate Limits
+
+Currently there are no rate limits, but this is subject to change as traffic increases.
+
+You can help us keep this policy by keeping your code sane - please use caching as much as possible. When using the API in web services, avoid making service requests on each page load (this will also greatly speed up your site!).
+

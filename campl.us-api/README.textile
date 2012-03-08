@@ -2,39 +2,31 @@ h1. Camera+ campl.us integration API
 
 This is our basic read-only API. The purpose of this API is to facilitate Twitter client authors to show our users' content inline in tweet feeds, and our users to integrate their Camera+ photo feed into their blogs or websites.
 
-
-h2. Widgets
-
-If all you want is to embed your recent photos on your blog or website, we have a simple HTML code snippet you can add to embed it on your page. Simply copy and paste this HTML code, and replace "mostlylisa" with your own username. 
-
-bc. <iframe src="http://campl.us/user/mostlylisa:widget" style="width: 450px; height: 500px;" allowtransparency="true" scrolling="no" frameborder="0"></iframe>
-
-You can also add any of the following GET variables to the URL to change the style of the widget:
-
-|_. Variable |_. Required? |_. Value |_. Default |
-| rows | No | Number between 1-10 | 3 |
-| columns | No | Number between 1-10  | 3 |
-| thumbnailsize | No | Thumbnail pixel size | 120 |
-| color | No | dark/light | dark |
-| backgroundcolor | No | CSS color | transparent |
-| logostyle | No | small/medium/large | medium |
-| thumbnailstyle | No | straight/skewed | skewed |
-| animated | No | yes/no | yes |
-
-You can use this tool to experiment with the above settings: http://campl.us/embed
-
 h2. API Requests
 
 For more customized interaction, you can use our simple read-only API. Currently we require no authentication or client registration, and there are no usage limits. This is subject to change, so please keep an eye on our blog for the latest news.
 
+h3. Formats
+
+Any call that returns data can return data as JSON or XML by specifying the required format in the &format= GET parameter. If you don't specify a format, the default is JSON. 
+
+|_. Format |_. GET parameter |_. Configuration |
+| JSON | &format=json | None |
+| JSONP | &format=json | &callback=jsonpFunctionName |
+| XML | &format=xml | None |
+
 For any of the calls below which return JSON, if you require a JSONP callback, it can be supplied in the query string as ?callback=jsonpFunctionName
+
+h3. Domains
+
+Links to Camera+ pages may appear with both the domains campl.us or camerapl.us. If your Twitter client is looking for Camera+ links, be sure to check for both domains. Currently calls to camerapl.us redirect to campl.us, although this is subject to change. 
 
 
 h3. Pages
 
 Each time a user shares one or more photos, a page is created. Unlike most other photo sharing services, there can be more than one photo shared per page.
 
-Photo pages are identified by their short URLs, such as http://campl.us/dBg4. The campl.us domain also hosts some other, non-photo pages. These can be identified easily as they will always contain a forward-slash (/) somewhere in the path, possibly as a trailing character. If you try to make API requests on a non-photo page, you will get an HTTP 404 error.
+Photo pages are identified by their short URLs, such as http://campl.us/dBg4 (or http://camerapl.us/dBg4). The campl.us domain also hosts some other, non-photo pages. These can be identified easily as they will always contain a forward-slash (/) somewhere in the path, possibly as a trailing character. If you try to make API requests on a non-photo page, you will get an HTTP 404 error.
 
 To get information for page, make an HTTP request to the short url with one of the following extensions:
 
@@ -160,7 +152,7 @@ h3. Users
 
 Users are identified by their Twitter usernames. For detailed information on a user, use the appropriate Twitter API.
 
-Users have their own home pages under the /user path, e.g. http://campl.us/user/taptaptap. Requests for users can fail with a 404 if the user has never uploaded anything to campl.us, or 403 if their Twitter timeline is set to private.
+Users have their own home pages under the /user path, e.g. http://campl.us/user/taptaptap (or http://camerapl.us/user/taptaptap). Requests for users can fail with a 404 if the user has never uploaded anything to campl.us, or 403 if their Twitter timeline is set to private.
 
 h4. User info API
 
@@ -343,3 +335,85 @@ Currently there are no rate limits, but this is subject to change as traffic inc
 
 You can help us keep this policy by keeping your code sane - please use caching as much as possible. When using the API in web services, avoid making service requests on each page load (this will also greatly speed up your site!).
 
+
+h2. Example: Wordpress plugin
+
+"Download":http://api.camerapl.us/wordpress_plugin.phps
+
+<pre>
+<code>
+<?php
+/*
+Plugin Name: campl.us
+Plugin URI: http://campl.us
+Description: Create posts based on a campl.us profile
+Version: 0.1
+Author: tap tap tap
+Author URI: http://campl.us/api
+License: Public domain
+*/
+
+if ( ! wp_next_scheduled( 'camplus_cron_hook' ) ) {
+  wp_schedule_event( time(), 'hourly', 'camplus_cron_hook' );
+}
+
+add_action( 'camplus_cron_hook', 'camplus_check_cron' );
+
+function camplus_check_cron() {
+	$wp_author_id = 4;
+	$camplus_username = 'mostlylisa';
+	
+	$last_timestamp = get_option('camplus_last_timestamp');
+	$new_last_timestamp = $last_timestamp;
+	
+	echo $last_timestamp;
+	
+	$data = file_get_contents('http://campl.us/user/'.$camplus_username.':pages');
+	$info = json_decode($data,true);
+	$x = 0;
+	foreach($info['pages'] as $page) {
+		if ($page['timestamp'] <= $last_timestamp)
+			break;
+		
+		$text = html_entity_decode($page['tweettext']);
+		
+		foreach ($page['images'] as $image) {
+			$text .= "\n\n";
+			$text .= '<img src="'.$image['800px'].'">';
+		}
+		
+		$post = array(
+			'post_author' => $wp_author_id, //The user ID number of the author.
+			'post_status' => 'publish', //Set the status of the new post. 
+			'post_content' => $text, //The full text of the post.
+			'post_date_gmt' => $page['timestamp'], //The time post was made, in GMT.
+			'post_title' => html_entity_decode($page['tweettext']), //The title of your post.
+//			'post_category' => [ array(<category id>, <...>) ] //Add some categories.
+//			'post_excerpt' => [ <an excerpt> ] //For all your post excerpt needs.
+//			'post_name' => [ <the name> ] // The name (slug) for your post
+//			'post_type' => [ 'post' | 'page' | 'link' | 'nav_menu_item' | custom post type ] //You may want to insert a regular post, page, link, a menu item or some custom post type
+//			'tags_input' => [ '<tag>, <tag>, <...>' ] //For tags.
+//			'tax_input' => [ array( 'taxonomy_name' => array( 'term', 'term2', 'term3' ) ) ] // support for custom taxonomies. 
+		);
+		
+		$post_id = wp_insert_post( $post, $wp_error ); 		
+		add_post_meta($post_id, 'lat_long', str_replace(' ',',',$page['location']), true);
+		add_post_meta($post_id, 'city_name', $page['locationname'], true);
+		$new_last_timestamp = max($new_last_timestamp,$page['timestamp']);
+		
+		if (!$last_timestamp) {
+			break; //first time we run, just get the latest tweet
+		}
+	}
+	
+	if (!$last_timestamp || $new_last_timestamp>$last_timestamp) {
+		update_option('camplus_last_timestamp',$new_last_timestamp);
+	}
+}
+
+if (isset($_GET['force_camplus_update']))
+	camplus_check_cron();
+
+?>
+</code>
+</pre>

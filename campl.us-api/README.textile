@@ -15,8 +15,6 @@ Any call that returns data can return data as JSON or XML by specifying the requ
 | JSONP | &format=json | &callback=jsonpFunctionName |
 | XML | &format=xml | None |
 
-For any of the calls below which return JSON, if you require a JSONP callback, it can be supplied in the query string as ?callback=jsonpFunctionName
-
 h3. Domains
 
 Links to Camera+ pages may appear with both the domains campl.us or camerapl.us. If your Twitter client is looking for Camera+ links, be sure to check for both domains. Currently calls to camerapl.us redirect to campl.us, although this is subject to change. 
